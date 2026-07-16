@@ -161,7 +161,11 @@ class PlayerProfiles(private val database: Database) {
             recordStatEvent(connection, uuid, resultEvent, gameType, time)
 
             val (winstreak, highest) = loadWinstreak(connection, uuid)
-            val newWinstreak = if (result == GameResult.WIN) winstreak + 1 else 0
+            val newWinstreak = when (result) {
+                GameResult.WIN -> winstreak + 1
+                GameResult.DRAW -> winstreak
+                GameResult.LOSS -> 0
+            }
 
             connection.prepareStatement("""
                 UPDATE player_stats SET
