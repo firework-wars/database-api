@@ -9,12 +9,13 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MessageBus(private val host: String, private val port: Int) {
+class MessageBus(host: String, port: Int) {
 
     private val logger = LoggerFactory.getLogger(MessageBus::class.java)
     private val handlers = ConcurrentHashMap<String, CopyOnWriteArrayList<(String) -> Unit>>()
 
-    private lateinit var pool: JedisPool
+    private val pool = JedisPool(JedisPoolConfig().apply { maxTotal = 16; maxIdle = 8 }, host, port)
+
     private lateinit var subscriber: ExecutorService
     private lateinit var pubSub: JedisPubSub
 
@@ -29,13 +30,6 @@ class MessageBus(private val host: String, private val port: Int) {
     }
 
     fun start() {
-        val config = JedisPoolConfig().apply {
-            maxTotal = 16
-            maxIdle = 8
-        }
-
-        pool = JedisPool(config, host, port)
-
         pubSub = object : JedisPubSub() {
             override fun onMessage(channel: String, message: String) {
                 handlers[channel]?.forEach { handler ->
@@ -94,7 +88,7 @@ class MessageBus(private val host: String, private val port: Int) {
         }
 
         if (::subscriber.isInitialized) subscriber.shutdownNow()
-        if (::pool.isInitialized) pool.close()
+        pool.close()
     }
 
     companion object {
