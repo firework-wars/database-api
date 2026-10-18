@@ -15,8 +15,8 @@ dependencies {
     compileOnly("redis.clients:jedis:6.0.0")
     compileOnly("org.postgresql:postgresql:42.7.7")
     compileOnly("org.slf4j:slf4j-api:2.0.16")
-    compileOnly("net.kyori:adventure-api:4.17.0")
-    compileOnly("net.kyori:adventure-text-minimessage:4.17.0")
+    compileOnly("net.kyori:adventure-api:5.2.0")
+    compileOnly("net.kyori:adventure-text-minimessage:5.2.0")
 }
 
 java {
