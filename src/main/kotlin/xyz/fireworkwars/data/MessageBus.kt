@@ -1,9 +1,9 @@
 package xyz.fireworkwars.data
 
 import org.slf4j.LoggerFactory
-import redis.clients.jedis.JedisPool
-import redis.clients.jedis.JedisPoolConfig
+import redis.clients.jedis.ConnectionPoolConfig
 import redis.clients.jedis.JedisPubSub
+import redis.clients.jedis.RedisClient
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ExecutorService
@@ -14,7 +14,10 @@ class MessageBus(host: String, port: Int) {
     private val logger = LoggerFactory.getLogger(MessageBus::class.java)
     private val handlers = ConcurrentHashMap<String, CopyOnWriteArrayList<(String) -> Unit>>()
 
-    private val pool = JedisPool(JedisPoolConfig().apply { maxTotal = 16; maxIdle = 8 }, host, port)
+    private val client = RedisClient.builder()
+        .hostAndPort(host, port)
+        .poolConfig(ConnectionPoolConfig().apply { maxTotal = 16; maxIdle = 8 })
+        .build()
 
     private lateinit var subscriber: ExecutorService
     private lateinit var pubSub: JedisPubSub
@@ -26,7 +29,7 @@ class MessageBus(host: String, port: Int) {
     }
 
     fun publish(channel: String, message: String) {
-        pool.resource.use { it.publish(channel, message) }
+        client.publish(channel, message)
     }
 
     fun start() {
@@ -61,7 +64,7 @@ class MessageBus(host: String, port: Int) {
             }
 
             try {
-                pool.resource.use { jedis -> jedis.subscribe(pubSub, *channels) }
+                client.subscribe(pubSub, *channels)
                 backoffMillis = INITIAL_BACKOFF_MILLIS
             } catch (e: Throwable) {
                 if (!running) break
@@ -88,7 +91,7 @@ class MessageBus(host: String, port: Int) {
         }
 
         if (::subscriber.isInitialized) subscriber.shutdownNow()
-        pool.close()
+        client.close()
     }
 
     companion object {

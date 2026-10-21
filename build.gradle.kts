@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.20"
-    kotlin("plugin.serialization") version "2.3.20"
+    kotlin("jvm") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21"
 }
 
 repositories {
@@ -10,11 +10,11 @@ repositories {
 
 dependencies {
     compileOnly(kotlin("stdlib"))
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-    compileOnly("com.zaxxer:HikariCP:6.3.0")
-    compileOnly("redis.clients:jedis:6.0.0")
-    compileOnly("org.postgresql:postgresql:42.7.7")
-    compileOnly("org.slf4j:slf4j-api:2.0.16")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    compileOnly("com.zaxxer:HikariCP:7.1.0")
+    compileOnly("redis.clients:jedis:8.0.2")
+    compileOnly("org.postgresql:postgresql:42.7.14")
+    compileOnly("org.slf4j:slf4j-api:2.0.20")
     compileOnly("net.kyori:adventure-api:5.2.0")
     compileOnly("net.kyori:adventure-text-minimessage:5.2.0")
 }
