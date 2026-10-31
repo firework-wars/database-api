@@ -95,6 +95,32 @@ class PlayerProfiles(private val database: Database) {
         }
     }
 
+    /** The player whose current name (the last one recorded) is [name], ignoring case. */
+    fun findUuidByName(name: String): UUID? {
+        database.getConnection().use { connection ->
+            connection.prepareStatement("SELECT uuid FROM players WHERE lower(names::jsonb ->> -1) = lower(?) ORDER BY last_seen DESC LIMIT 1").use { statement ->
+                statement.setString(1, name)
+
+                val resultSet = statement.executeQuery()
+                return if (resultSet.next()) UUID.fromString(resultSet.getString("uuid")) else null
+            }
+        }
+    }
+
+    /** Current names (the last one recorded) of the given players; players without a profile are left out. */
+    fun getNames(uuids: Collection<UUID>): Map<UUID, String> {
+        if (uuids.isEmpty()) return emptyMap()
+
+        database.getConnection().use { connection ->
+            connection.prepareStatement("SELECT uuid, names::jsonb ->> -1 AS name FROM players WHERE uuid = ANY(?)").use { statement ->
+                statement.setArray(1, connection.createArrayOf("text", uuids.map { it.toString() }.toTypedArray()))
+
+                val resultSet = statement.executeQuery()
+                return buildMap { while (resultSet.next()) put(UUID.fromString(resultSet.getString("uuid")), resultSet.getString("name")) }
+            }
+        }
+    }
+
     fun updateLastSeen(uuid: UUID) {
         database.getConnection().use { connection ->
             connection.prepareStatement("UPDATE players SET last_seen = ? WHERE uuid = ?").use { statement ->

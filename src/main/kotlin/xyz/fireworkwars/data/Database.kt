@@ -69,6 +69,45 @@ class Database(private val settings: ConnectionSettings) {
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_type_ts ON stat_events(type, timestamp)")
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_gametype_type_ts ON stat_events(game_type, type, timestamp)")
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_uuid ON stat_events(uuid)")
+
+                // social: a friendship is stored once per side, so "friends of X" is one indexed lookup
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS friends (
+                        uuid TEXT NOT NULL REFERENCES players(uuid),
+                        friend TEXT NOT NULL REFERENCES players(uuid),
+                        since BIGINT NOT NULL,
+                        PRIMARY KEY (uuid, friend)
+                    )
+                """.trimIndent())
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS friend_requests (
+                        sender TEXT NOT NULL REFERENCES players(uuid),
+                        target TEXT NOT NULL REFERENCES players(uuid),
+                        sent_at BIGINT NOT NULL,
+                        PRIMARY KEY (sender, target)
+                    )
+                """.trimIndent())
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS blocks (
+                        uuid TEXT NOT NULL REFERENCES players(uuid),
+                        blocked TEXT NOT NULL REFERENCES players(uuid),
+                        since BIGINT NOT NULL,
+                        PRIMARY KEY (uuid, blocked)
+                    )
+                """.trimIndent())
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS social_settings (
+                        uuid TEXT PRIMARY KEY REFERENCES players(uuid),
+                        friend_requests TEXT NOT NULL DEFAULT 'EVERYONE',
+                        messages TEXT NOT NULL DEFAULT 'EVERYONE',
+                        party_invites TEXT NOT NULL DEFAULT 'FRIENDS'
+                    )
+                """.trimIndent())
+
+                statement.execute("CREATE INDEX IF NOT EXISTS idx_friend_requests_target ON friend_requests(target)")
             }
         }
     }
