@@ -53,6 +53,19 @@ class Social(private val database: Database) {
         }
     }
 
+    /** Remembers to tell [uuid], when they next join, that [friend] accepted their friend request. */
+    fun markUnannounced(uuid: UUID, friend: UUID) {
+        update("UPDATE friends SET unannounced = TRUE WHERE uuid = ? AND friend = ?") {
+            it.setString(1, uuid.toString()); it.setString(2, friend.toString())
+        }
+    }
+
+    /** Friends who accepted [uuid]'s requests while [uuid] was offline, oldest first; each is returned only once. */
+    fun takeUnannounced(uuid: UUID): List<UUID> = queryUuids("""
+        WITH announced AS (UPDATE friends SET unannounced = FALSE WHERE uuid = ? AND unannounced RETURNING friend, since)
+        SELECT friend FROM announced ORDER BY since
+    """.trimIndent(), uuid)
+
     /** Ends the friendship between [a] and [b]; returns false if they weren't friends. */
     fun removeFriendship(a: UUID, b: UUID): Boolean = transaction { connection ->
         connection.prepareStatement("DELETE FROM friends WHERE (uuid = ? AND friend = ?) OR (uuid = ? AND friend = ?)").use {

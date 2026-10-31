@@ -70,15 +70,19 @@ class Database(private val settings: ConnectionSettings) {
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_gametype_type_ts ON stat_events(game_type, type, timestamp)")
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_uuid ON stat_events(uuid)")
 
-                // social: a friendship is stored once per side, so "friends of X" is one indexed lookup
+                // social: a friendship is stored once per side, so "friends of X" is one indexed lookup.
+                // unannounced: friend accepted uuid's request while uuid was offline, and uuid hasn't been told yet
                 statement.execute("""
                     CREATE TABLE IF NOT EXISTS friends (
                         uuid TEXT NOT NULL REFERENCES players(uuid),
                         friend TEXT NOT NULL REFERENCES players(uuid),
                         since BIGINT NOT NULL,
+                        unannounced BOOLEAN NOT NULL DEFAULT FALSE,
                         PRIMARY KEY (uuid, friend)
                     )
                 """.trimIndent())
+
+                statement.execute("ALTER TABLE friends ADD COLUMN IF NOT EXISTS unannounced BOOLEAN NOT NULL DEFAULT FALSE")
 
                 statement.execute("""
                     CREATE TABLE IF NOT EXISTS friend_requests (
