@@ -112,6 +112,41 @@ class Database(private val settings: ConnectionSettings) {
                 """.trimIndent())
 
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_friend_requests_target ON friend_requests(target)")
+
+                // progression: total XP (the level is worked out from it) and unlocked achievements
+                statement.execute("ALTER TABLE player_stats ADD COLUMN IF NOT EXISTS xp BIGINT NOT NULL DEFAULT 0")
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS achievements (
+                        uuid TEXT NOT NULL REFERENCES players(uuid),
+                        achievement TEXT NOT NULL,
+                        unlocked_at BIGINT NOT NULL,
+                        PRIMARY KEY (uuid, achievement)
+                    )
+                """.trimIndent())
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS player_customisation (
+                        uuid TEXT PRIMARY KEY REFERENCES players(uuid),
+                        death_effect TEXT NOT NULL DEFAULT 'FIREWORK',
+                        status TEXT
+                    )
+                """.trimIndent())
+
+                statement.execute("""
+                    CREATE TABLE IF NOT EXISTS reports (
+                        id BIGSERIAL PRIMARY KEY,
+                        reporter TEXT NOT NULL REFERENCES players(uuid),
+                        target TEXT NOT NULL REFERENCES players(uuid),
+                        category TEXT NOT NULL,
+                        server TEXT,
+                        created_at BIGINT NOT NULL,
+                        closed_at BIGINT,
+                        closed_by TEXT
+                    )
+                """.trimIndent())
+
+                statement.execute("CREATE INDEX IF NOT EXISTS idx_reports_open ON reports(closed_at, created_at)")
             }
         }
     }
