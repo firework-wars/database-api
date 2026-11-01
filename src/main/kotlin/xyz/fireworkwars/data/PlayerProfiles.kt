@@ -228,6 +228,33 @@ class PlayerProfiles(private val database: Database) {
         return getTopStat(StatType.WIN, gameType, limit, since)
     }
 
+    /** Where [uuid] places for [type] in [gameType] since [since] (1 is the top), and their count; null if they have none. */
+    fun getPosition(uuid: UUID, type: StatType, gameType: String, since: Long? = null): Pair<Int, Int>? {
+        val sinceFilter = if (since != null) "AND timestamp >= ?" else ""
+        val query = """
+            WITH totals AS (
+                SELECT uuid, COUNT(*) AS value FROM stat_events
+                WHERE type = ? AND game_type = ? $sinceFilter
+                GROUP BY uuid
+            )
+            SELECT value, (SELECT COUNT(*) FROM totals t2 WHERE t2.value > t.value) + 1 AS position
+            FROM totals t WHERE uuid = ?
+        """.trimIndent()
+
+        database.getConnection().use { connection ->
+            connection.prepareStatement(query).use { statement ->
+                var index = 1
+                statement.setString(index++, type.name)
+                statement.setString(index++, gameType)
+                if (since != null) statement.setLong(index++, since)
+                statement.setString(index, uuid.toString())
+
+                val resultSet = statement.executeQuery()
+                return if (resultSet.next()) resultSet.getInt("position") to resultSet.getInt("value") else null
+            }
+        }
+    }
+
     private fun getTopStat(type: StatType, gameType: String, limit: Int, since: Long?): List<LeaderboardEntry> {
         val entries = mutableListOf<LeaderboardEntry>()
 
