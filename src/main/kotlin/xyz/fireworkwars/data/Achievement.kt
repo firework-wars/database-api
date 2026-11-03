@@ -1,6 +1,5 @@
 package xyz.fireworkwars.data
 
-/** Every achievement on the network: [game] is the game it's for ("FWW" or "LR"), or null when any game counts. */
 enum class Achievement(val title: String, val description: String, val xp: Int, val game: String? = null) {
     FIRST_GAME("First Steps", "Play your first game.", 50),
     FIRST_WIN("Victory", "Win your first game.", 100),

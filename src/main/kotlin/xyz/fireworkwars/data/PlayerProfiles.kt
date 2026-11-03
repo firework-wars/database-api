@@ -95,7 +95,6 @@ class PlayerProfiles(private val database: Database) {
         }
     }
 
-    /** The player whose current name (the last one recorded) is [name], ignoring case. */
     fun findUuidByName(name: String): UUID? {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT uuid FROM players WHERE lower(names::jsonb ->> -1) = lower(?) ORDER BY last_seen DESC LIMIT 1").use { statement ->
@@ -107,7 +106,6 @@ class PlayerProfiles(private val database: Database) {
         }
     }
 
-    /** Current names (the last one recorded) of the given players; players without a profile are left out. */
     fun getNames(uuids: Collection<UUID>): Map<UUID, String> {
         if (uuids.isEmpty()) return emptyMap()
 
@@ -228,7 +226,6 @@ class PlayerProfiles(private val database: Database) {
         return getTopStat(StatType.WIN, gameType, limit, since)
     }
 
-    /** Where [uuid] places for [type] in [gameType] since [since] (1 is the top), and their count; null if they have none. */
     fun getPosition(uuid: UUID, type: StatType, gameType: String, since: Long? = null): Pair<Int, Int>? {
         val sinceFilter = if (since != null) "AND timestamp >= ?" else ""
         val query = """

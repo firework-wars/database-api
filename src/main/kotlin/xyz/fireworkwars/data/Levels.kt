@@ -1,6 +1,5 @@
 package xyz.fireworkwars.data
 
-/** Network levels: everyone starts at level 1, and each level takes 100 XP more than the last (500 XP from 1 to 2). */
 object Levels {
 
     fun xpToNext(level: Int): Long = 400L + 100L * level
@@ -16,7 +15,6 @@ object Levels {
         return level
     }
 
-    /** How far into their current level [xp] puts a player. */
     fun xpIntoLevel(xp: Long): Long {
         var level = 1
         var left = xp
@@ -29,7 +27,6 @@ object Levels {
     }
 }
 
-/** What a finished game is worth, before achievements. */
 enum class XpReward(val amount: Int) {
     GAME(25),
     KILL(25),

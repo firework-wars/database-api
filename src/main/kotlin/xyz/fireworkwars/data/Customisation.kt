@@ -3,7 +3,6 @@ package xyz.fireworkwars.data
 import java.sql.PreparedStatement
 import java.util.UUID
 
-/** What plays where a player dies; [level] unlocks it, and GOLD players have them all. */
 enum class DeathEffect(val title: String, val level: Int) {
     FIREWORK("Firework", 1),
     LIGHTNING("Lightning", 5),
@@ -18,7 +17,6 @@ enum class DeathEffect(val title: String, val level: Int) {
     fun isUnlocked(level: Int, rank: Rank): Boolean = rank == Rank.GOLD || level >= this.level
 }
 
-/** The parts of a profile a player picks themselves: their death effect and a short status. */
 @Suppress("unused")
 class Customisation(private val database: Database) {
 
@@ -35,7 +33,6 @@ class Customisation(private val database: Database) {
 
     fun getStatus(uuid: UUID): String? = queryString("SELECT status FROM player_customisation WHERE uuid = ?", uuid)
 
-    /** Statuses of the players that have one. */
     fun getStatuses(uuids: Collection<UUID>): Map<UUID, String> {
         if (uuids.isEmpty()) return emptyMap()
 
@@ -49,7 +46,6 @@ class Customisation(private val database: Database) {
         }
     }
 
-    /** Sets the status, or clears it with null. */
     fun setStatus(uuid: UUID, status: String?) {
         update("INSERT INTO player_customisation (uuid, status) VALUES (?, ?) ON CONFLICT (uuid) DO UPDATE SET status = EXCLUDED.status") {
             it.setString(1, uuid.toString()); it.setString(2, status)

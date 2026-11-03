@@ -4,10 +4,8 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.UUID
 
-/** Who may reach a player through one kind of social action. */
 enum class Privacy { EVERYONE, FRIENDS, NOBODY }
 
-/** The kinds of social action a player controls with [Privacy]. */
 enum class SocialAction(val column: String) {
     FRIEND_REQUESTS("friend_requests"),
     MESSAGES("messages"),
@@ -26,11 +24,8 @@ data class SocialSettings(
     }
 }
 
-/** Friends, friend requests, blocks and privacy settings. */
 @Suppress("unused")
 class Social(private val database: Database) {
-
-    // --- friends ---
 
     fun getFriends(uuid: UUID): List<UUID> =
         queryUuids("SELECT friend FROM friends WHERE uuid = ? ORDER BY since", uuid)
@@ -38,7 +33,6 @@ class Social(private val database: Database) {
     fun areFriends(a: UUID, b: UUID): Boolean =
         exists("SELECT 1 FROM friends WHERE uuid = ? AND friend = ?", a, b)
 
-    /** Makes [a] and [b] friends and clears any requests between them. */
     fun addFriendship(a: UUID, b: UUID) {
         val now = System.currentTimeMillis()
 
@@ -53,20 +47,17 @@ class Social(private val database: Database) {
         }
     }
 
-    /** Remembers to tell [uuid], when they next join, that [friend] accepted their friend request. */
     fun markUnannounced(uuid: UUID, friend: UUID) {
         update("UPDATE friends SET unannounced = TRUE WHERE uuid = ? AND friend = ?") {
             it.setString(1, uuid.toString()); it.setString(2, friend.toString())
         }
     }
 
-    /** Friends who accepted [uuid]'s requests while [uuid] was offline, oldest first; each is returned only once. */
     fun takeUnannounced(uuid: UUID): List<UUID> = queryUuids("""
         WITH announced AS (UPDATE friends SET unannounced = FALSE WHERE uuid = ? AND unannounced RETURNING friend, since)
         SELECT friend FROM announced ORDER BY since
     """.trimIndent(), uuid)
 
-    /** Ends the friendship between [a] and [b]; returns false if they weren't friends. */
     fun removeFriendship(a: UUID, b: UUID): Boolean = transaction { connection ->
         connection.prepareStatement("DELETE FROM friends WHERE (uuid = ? AND friend = ?) OR (uuid = ? AND friend = ?)").use {
             it.setString(1, a.toString()); it.setString(2, b.toString())
@@ -74,8 +65,6 @@ class Social(private val database: Database) {
             it.executeUpdate() > 0
         }
     }
-
-    // --- friend requests ---
 
     fun hasRequest(sender: UUID, target: UUID): Boolean =
         exists("SELECT 1 FROM friend_requests WHERE sender = ? AND target = ?", sender, target)
@@ -97,19 +86,14 @@ class Social(private val database: Database) {
     fun getOutgoingRequests(uuid: UUID): List<UUID> =
         queryUuids("SELECT target FROM friend_requests WHERE sender = ? ORDER BY sent_at", uuid)
 
-    // --- blocks ---
-
-    /** True if [uuid] has blocked [other]. */
     fun hasBlocked(uuid: UUID, other: UUID): Boolean =
         exists("SELECT 1 FROM blocks WHERE uuid = ? AND blocked = ?", uuid, other)
 
-    /** True if either player has blocked the other. */
     fun isBlockedEitherWay(a: UUID, b: UUID): Boolean = hasBlocked(a, b) || hasBlocked(b, a)
 
     fun getBlocked(uuid: UUID): List<UUID> =
         queryUuids("SELECT blocked FROM blocks WHERE uuid = ? ORDER BY since", uuid)
 
-    /** Blocks [blocked] for [uuid], ending any friendship and requests between them. */
     fun block(uuid: UUID, blocked: UUID): Boolean = transaction { connection ->
         val added = connection.prepareStatement("INSERT INTO blocks (uuid, blocked, since) VALUES (?, ?, ?) ON CONFLICT DO NOTHING").use {
             it.setString(1, uuid.toString()); it.setString(2, blocked.toString()); it.setLong(3, System.currentTimeMillis())
@@ -129,8 +113,6 @@ class Social(private val database: Database) {
             it.setString(1, uuid.toString()); it.setString(2, blocked.toString())
         } > 0
 
-    // --- privacy ---
-
     fun getSettings(uuid: UUID): SocialSettings {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT * FROM social_settings WHERE uuid = ?").use { statement ->
@@ -149,7 +131,6 @@ class Social(private val database: Database) {
     }
 
     fun setPrivacy(uuid: UUID, action: SocialAction, privacy: Privacy) {
-        // the column name comes from the enum, never from input
         update("""
             INSERT INTO social_settings (uuid, ${action.column}) VALUES (?, ?)
             ON CONFLICT (uuid) DO UPDATE SET ${action.column} = EXCLUDED.${action.column}
@@ -157,8 +138,6 @@ class Social(private val database: Database) {
             it.setString(1, uuid.toString()); it.setString(2, privacy.name)
         }
     }
-
-    // --- helpers ---
 
     private fun deleteRequests(connection: Connection, a: UUID, b: UUID) {
         connection.prepareStatement("DELETE FROM friend_requests WHERE (sender = ? AND target = ?) OR (sender = ? AND target = ?)").use {

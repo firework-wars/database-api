@@ -70,8 +70,6 @@ class Database(private val settings: ConnectionSettings) {
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_gametype_type_ts ON stat_events(game_type, type, timestamp)")
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_stat_events_uuid ON stat_events(uuid)")
 
-                // social: a friendship is stored once per side, so "friends of X" is one indexed lookup.
-                // unannounced: friend accepted uuid's request while uuid was offline, and uuid hasn't been told yet
                 statement.execute("""
                     CREATE TABLE IF NOT EXISTS friends (
                         uuid TEXT NOT NULL REFERENCES players(uuid),
@@ -113,7 +111,6 @@ class Database(private val settings: ConnectionSettings) {
 
                 statement.execute("CREATE INDEX IF NOT EXISTS idx_friend_requests_target ON friend_requests(target)")
 
-                // progression: total XP (the level is worked out from it) and unlocked achievements
                 statement.execute("ALTER TABLE player_stats ADD COLUMN IF NOT EXISTS xp BIGINT NOT NULL DEFAULT 0")
 
                 statement.execute("""

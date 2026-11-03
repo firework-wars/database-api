@@ -16,13 +16,11 @@ data class PlayerStats(
     val level: Int get() = Levels.levelOf(xp)
 }
 
-/** XP, achievements and the stats they're worked out from. */
 @Suppress("unused")
 class Progression(private val database: Database) {
 
     fun getXp(uuid: UUID): Long = getStats(uuid)?.xp ?: 0L
 
-    /** Adds [amount] XP and returns the new total. */
     fun addXp(uuid: UUID, amount: Int): Long {
         database.getConnection().use { connection ->
             connection.prepareStatement("UPDATE player_stats SET xp = xp + ? WHERE uuid = ? RETURNING xp").use { statement ->
@@ -57,7 +55,6 @@ class Progression(private val database: Database) {
         }
     }
 
-    /** How many of each [StatType] a player has per game type ("FWW", "LR"). */
     fun getStatsByGame(uuid: UUID): Map<String, Map<StatType, Int>> {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT game_type, type, COUNT(*) FROM stat_events WHERE uuid = ? AND game_type IS NOT NULL GROUP BY game_type, type").use { statement ->
@@ -86,7 +83,6 @@ class Progression(private val database: Database) {
         }
     }
 
-    /** Unlocks [achievement] for [uuid]; false if they already had it. */
     fun unlock(uuid: UUID, achievement: Achievement): Boolean {
         database.getConnection().use { connection ->
             connection.prepareStatement("INSERT INTO achievements (uuid, achievement, unlocked_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING").use { statement ->
@@ -99,7 +95,6 @@ class Progression(private val database: Database) {
         }
     }
 
-    /** The achievements [uuid] has, and when each was unlocked. */
     fun getAchievements(uuid: UUID): Map<Achievement, Long> {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT achievement, unlocked_at FROM achievements WHERE uuid = ?").use { statement ->

@@ -19,7 +19,6 @@ data class Report(
     val createdAt: Long
 )
 
-/** Player reports: open until a staff member closes them. */
 @Suppress("unused")
 class Reports(private val database: Database) {
 
@@ -39,7 +38,6 @@ class Reports(private val database: Database) {
         }
     }
 
-    /** Whether [reporter] already has an open report on [target]. */
     fun hasOpen(reporter: UUID, target: UUID): Boolean {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT 1 FROM reports WHERE reporter = ? AND target = ? AND closed_at IS NULL").use { statement ->
@@ -51,7 +49,6 @@ class Reports(private val database: Database) {
         }
     }
 
-    /** Open reports, oldest first. */
     fun getOpen(): List<Report> {
         database.getConnection().use { connection ->
             connection.prepareStatement("SELECT * FROM reports WHERE closed_at IS NULL ORDER BY created_at").use { statement ->
@@ -73,7 +70,6 @@ class Reports(private val database: Database) {
         }
     }
 
-    /** Closes report [id] (and the other open reports on the same player); returns how many were closed. */
     fun close(id: Long, staff: UUID?): Int {
         database.getConnection().use { connection ->
             connection.prepareStatement("""
